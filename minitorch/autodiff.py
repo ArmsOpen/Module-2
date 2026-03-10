@@ -22,7 +22,16 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    try:
+        new_vals = list(vals)
+        new_vals[arg] += epsilon
+        new_vals = tuple(new_vals)
+        return (f(*new_vals) - f(*vals)) / epsilon
+    except:
+        new_vals = list(vals)
+        new_vals[arg] -= epsilon
+        new_vals = tuple(new_vals)
+        return (f(*vals) - f(*new_vals)) / epsilon
 
 
 variable_count = 1
@@ -60,7 +69,20 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    topological_list = []
+    visited_list = []
+    def dfs(var):
+        visited_list.append(var.unique_id)
+        if var.is_constant():
+            topological_list.append(var)
+            return
+        parents = var.parents
+        for parent in parents:
+            if parent.unique_id not in visited_list:
+                dfs(parent)
+        topological_list.append(var)
+    dfs(variable)
+    return topological_list[::-1]
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -74,8 +96,21 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
-
+    topological_list = topological_sort(variable)
+    derivative_dict = {}
+    derivative_dict[variable.unique_id] = deriv
+    for var in topological_list:
+        if var.is_leaf():
+            continue
+        back = var.chain_rule(derivative_dict[var.unique_id])
+        for pair in back:
+            if pair[0].is_leaf():
+                pair[0].accumulate_derivative(pair[1])
+            else:
+                if pair[0].unique_id in derivative_dict:
+                    derivative_dict[pair[0].unique_id] += pair[1]
+                else:
+                    derivative_dict[pair[0].unique_id] = pair[1]
 
 @dataclass
 class Context:
