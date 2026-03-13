@@ -116,9 +116,8 @@ class Sigmoid(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-            a = ctx.saved_values
-            return grad_output.f.add_zip(grad_output.f.mul_zip(grad_output, grad_output.f.sigmoid_map(a)), grad_output.f.neg_map(grad_output.f.mul_zip(grad_output, grad_output.f.mul_zip(grad_output.f.sigmoid_map(a), grad_output.f.sigmoid_map(a)))),)
-
+            (a,) = ctx.saved_values
+            return grad_output.f.mul_zip(grad_output, grad_output.f.add_zip(grad_output.f.sigmoid_map(a), grad_output.f.neg_map(grad_output.f.mul_zip(grad_output.f.sigmoid_map(a), grad_output.f.sigmoid_map(a)))))
 
 class ReLU(Function):
     @staticmethod
@@ -207,13 +206,19 @@ class IsClose(Function):
 class Permute(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+        ctx.save_for_backward(order)
+        return a._new(a._tensor.permute(*(int(order[i]) for i in range(order.size))))
+
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+        (order,) = ctx.saved_values
+        order = [int(order[i]) for i in range(order.size)]
+        old_order = [0] * len(order)
+        for i, p in enumerate(order):
+            old_order[p] = i
+        return grad_output._new(grad_output._tensor.permute(*old_order)), 0.0
+
 
 
 class View(Function):
